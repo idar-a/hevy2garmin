@@ -123,6 +123,20 @@ export async function syncOneWorkout(sql: Sql, options: SyncOneOptions = {}) {
     hrFusion: saved.hrFusion,
     descriptionEnabled: saved.descriptionEnabled,
     profile: saved.profile,
+    ...graceFromEnv(),
     ...engineOptions, // an explicit option still wins, which is what tests rely on
   });
+}
+
+/**
+ * LOCAL CHANGE (idar-a fork): H2G_GRACE_MINUTES overrides the engine's default
+ * grace period (120 min) for unattended syncs. 0 turns the wait off, which suits
+ * an account that never records strength on the watch. Unset or invalid keeps
+ * the upstream default. Re-apply after "Sync fork" if upstream drops it.
+ */
+function graceFromEnv(): { graceMinutes?: number } {
+  const raw = process.env.H2G_GRACE_MINUTES;
+  if (raw == null || raw.trim() === "") return {};
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? { graceMinutes: n } : {};
 }
